@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Restock</title>
+    <style>
+        /* Base Styles */
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: linear-gradient(45deg, #ff9a9e, #fad0c4, #fad0c4, #fbc2eb, #f6d365);
+            background-size: 400% 400%;
+            animation: gradientBackground 15s ease infinite;
+            color: #333;
+        }
+
+        @keyframes gradientBackground {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Container Styles */
+        .summary, .completed-checks, #sectionSelect, #question, #summary {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            background-color: rgba(255, 255, 255, 0.8);
+        }
+
+        button {
+            margin: 5px;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            background-color: #ff7e5f;
+            color: white;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #feb47b;
+        }
+
+        h1, h2 {
+            color: #444;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 600px) {
+            body {
+                margin: 10px;
+            }
+
+            button {
+                width: 100%;
+                margin: 10px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Inventory Restock</h1>
+
+    <!-- Section selection screen -->
+    <div id="sectionSelect">
+        <h2>Select a Section to Restock</h2>
+        <button onclick="startSection('drinks')">Drinks</button>
+        <button onclick="startSection('wine')">Wine</button>
+        <button onclick="startSection('beer')">Beer</button>
+        <button onclick="startSection('cider')">Cider</button>
+        <button onclick="startSection('shelfWine')">Shelf Wine</button>
+        <button onclick="startSection('crisps')">Crisps</button>
+    </div>
+
+    <!-- Restock questions screen -->
+    <div id="question" style="display: none;">
+        <h2 id="currentItem">Loading...</h2>
+        <input type="number" id="restockAmount" min="0">
+        <button onclick="submitAnswer()">Next</button>
+        <button onclick="goBack()">Go Back</button>
+        <button onclick="completeSection()">Complete</button>
+        <button onclick="cancelSection()">Cancel</button>
+    </div>
+
+    <!-- Summary screen -->
+    <div id="summary" class="summary" style="display: none;">
+        <h2>Summary of Items to Restock</h2>
+        <ul id="summaryList"></ul>
+        <button onclick="startOver()">Start Over</button>
+    </div>
+
+    <!-- Completed Checks -->
+    <div id="completedChecks" class="completed-checks">
+        <h2>Completed Checks</h2>
+        <ul id="completedList"></ul>
+        <button onclick="clearCompletedChecks()">Clear Completed Checks</button>
+    </div>
+
+    <script>
+        // Define the sections and items
+        const sections = {
+            drinks: [
+                'Robinson\'s Raspberry and Apple', 'Robinson\'s BlackBerry and BlueBerry',
+                'Ribena BlackCurrant', 'Ribena Light BlackCurrant', 'Oasis Citrus Punch',
+                'Oasis Summer Fruits', 'Original Canned Coke', 'Coke Zero Sugar',
+                'Diet Coke', 'Bottled Diet Coke', 'Diet No Caffeine Coke', 'Pepsi',
+                'Pepsi Electric', 'Pepsi Max Cherry', 'Pepsi Max Lemon', 'Original Pepsi',
+                'Vimto Juice', 'Capri Sun Orange', 'Fruit Shoot Blackcurrant',
+                'Fruit Shoot Orange', 'Rubicon Spring Blackberry and Raspberry',
+                'Lipton Lemon Flavored Ice Tea', 'Peach Ice Tea', 'Vimto Fizzy',
+                'Tango Orange', 'Tango Mango', 'Tango Cherry Blast', 'Tango Raspberry Blast',
+                'Dr. Pepper', 'Original Coca-Cola Bottles', 'Cherry Coca-Cola Bottle',
+                'Lemon Coca-Cola Bottle', 'Coca-Cola Zero Sugar Bottle', 'Coca-Cola Zero Sugar Vanilla',
+                'Coca-Cola Zero Sugar Lemon', 'Coca-Cola Zero Sugar Cherry', 'Fizzy Water',
+                'Iron Brew', 'Sprite', '7-Up', 'Fanta', 'Fanta 0 Sugar', 'Fanta Fruit Twist',
+                'Fanta Lemon', 'Monster Nitro', 'Monster 0 Sugar Energy', 'Monster Energy Absolute Zero',
+                'Monster Energy Ultra Paradise', 'Monster Energy Zero Sugar', 'Monster Juiced Mango Loco',
+                'Monster Ozzy Lemonade', 'Monster Ultra Golden Pineapple', 'Monster Pipeline Punch',
+                'Monster Pacific Punch', 'Monster Monarch', 'Big SmartWater', 'Small SmartWater',
+                'Ice Valley Water', 'Volvic Touch Of Lemon And Lime', 'Monster Energy Ultra Zero Sugar',
+                'Monster Ultra Fiesta Mango', 'Monster Ultra Peachy Tea', 'Monster Ultra Robo',
+                'Monster Ultra Watermelon', 'Monster Chaotic', 'Monster Ultra Strawberry Dreams',
+                'Relentless Original', 'Rockstar Guardian'
+            ],
+            wine: [
+                'I Heart Prosecco', 'Plaza Prosecco', 'Frixtent Italian Rose', 'Frixtent Prosecco',
+                'Echo Falls Summer Berries', 'Italian Blush', 'I Heart Rose', 'Barefoot White Zinfandel',
+                'Trevento Malbec Rose', 'La Vela Ferme', 'Blossom Hill', 'Yellowtail Chardonnay',
+                'Yellowtail Pinot Grigio', 'Wolf Blass Chardonnay', 'Casillero del Diablo',
+                'Pinot Grigio', 'Sauvignon Blanc', 'Calvet Prestige', 'Calvet Macon Villages',
+                'Marlborough Oyster Bay Sauvignon Blanc', 'Calvet Chablis', 'Quirky Bird Chenin Blanc',
+                'Quirky Bird Sauvignon Blanc', 'Hardys Sauvignon Blanc', 'Campo Viejo Blanco',
+                'Hardys Pinot Grigio', 'Hardys Chardonnay', 'Secretary Bird Blanc', 'Lambrini',
+                'Isla Negra', 'I Heart Sauvignon Blanc', 'I Heart Chardonnay', 'I Heart Pinot Grigio',
+                'Bin 161 Chardonnay', 'Bin 161 Sauvignon Blanc', 'Bin 161 Pinot Grigio', 'Barefoot Pinot Grigio'
+            ],
+            beer: [
+                'Corona Extra bottles', 'Peroni bottles', 'Coors Light pint cans',
+                'Budweiser bottles', 'Desperado bottles', 'Desperado cans', 'Moretti bottles',
+                'Heineken bottles', 'Peroni bottles', 'San Miguel', 'Stella Artois Unfiltered',
+                'Old Speckled Hen', 'Guinness Original', 'Guinness', 'The World\'s Best International Lager',
+                'Hobgoblin Gold Beer', 'John Smith\'s', 'Big Bottle Budweiser', 'Big Bottle Stella Artois',
+                'Big Bottle Heineken', 'Big Bottle Corona', 'Peroni cans', 'Stella Artois pint cans',
+                'Budweiser pint cans', 'Foster\'s pint cans', '1664 pint cans', 'San Miguel bottles',
+                'Tyskie bottles', 'Madri bottles', 'Peroni bottles', 'Estrella bottles',
+                'Cruzcampo bottles', 'Desperado\'s single bottles', 'Corona Extra', 'Stella Artois',
+                'Budweiser', 'Foster\'s', 'Heineken', 'Birra Moretti', 'Newcastle Brown Ale',
+                'Doom Bar', 'Old Crafty Hen', 'Whitstable Bay', 'London Pride', 'Hobgoblin Gold Beer',
+                'Carlsberg Pint Cans Silver', 'Carlsberg Pint Cans Green', 'Carlsberg', 'Carling Box',
+                'Carling Cans', 'Red Stripe Cans', 'Amstel Cans', 'Madri Cans', 'Cruzcampo Cans',
+                'Stella Artois Box', 'Strongbow Box', 'Foster\'s Box', 'Strongbow Dark Fruit Box', 'Carlsberg Box'
+            ],
+            cider: [
+                'Malibu Cola', 'Funkin Strawberry Tequila', 'Passion Fruit Martini',
+                'Captain Morgan Spiced Gold Cola', 'Smirnoff Vodka and Cranberry', 'Smirnoff Vodka and Cola',
+                'Jack Daniel\'s Coca-Cola', 'Jack Daniel\'s Coca-Cola Zero Sugar', 'Gordon\'s Gin and Tonic Green', 'Gordon\'s Gin and Tonic Diet', 'Southern Comfort Lemonade',
+                'Black Grape Vodka', 'Pimm\'s Lemonade', 'Bombay Presse Citrus Collins',
+                'Grey Goose Strawberry and Lemongrass', 'Bacardi Mojito', 'Bacardi Mango Mojito',
+                'Four Loko', 'Ice Smirnoff', 'Blue VK', 'Pink Hooch', 'Thatcher\'s Haze',
+                'Henry Weston\'s Vintage Cider', 'Thatcher\'s Katy', 'Thatcher\'s Apple and Blackcurrant',
+                'Thatcher\'s Blood Orange Cider', 'Bulmer\'s Crushed Red Berries and Lime',
+                'Bulmer\'s Original Premium Cider', 'Magners Irish Cider', 'Berries and Cherries Old Mout Cider',
+                'Kiwi and Lime Old Mout Cider', 'Pineapple and Raspberry Old Mout Cider',
+                'Copperberg Strawberry and Lime', 'Copperberg Mixed Fruit', 'Inches Medium Apple Cider',
+                'Strongbow Tropical Cider', 'Strongbow Cloudy Apple Cider', 'Strongbow Dark Fruits',
+                'Thatcher\'s Cloudy Lemon Cider', 'Thatcher\'s Blood Orange Cider', 'Thatcher\'s Rose Cider',
+                'Cans of Strongbow', 'Cans of Strongbow Strawberry Cider', 'Cans of Inches Medium Cider'
+            ],
+            shelfWine: [
+                '19 Crimes Red Wine', '19 Crimes The Uprising', 'Trevento Malbec',
+                'Trevento Malbec Private Reserve', 'Diablo Dark Red', 'Campo Viejo', 'Campo Viejo Reserve',
+                'Calvet', 'Yellowtail Shiraz small bottle', 'Casillero del Diablo small bottle',
+                'Cockburn\'s Special Reserve Port', 'Harvey\'s Solera Sherry', 'I Heart Malbec',
+                'McGuigan Black Label', 'Jam Shed', 'Harvest Mulled Wine', 'Canti Prosecco',
+                'I Heart Prosecco Rosé', 'Vintage Cadorino', '19 Crimes Revolutionary Rosé',
+                '19 Crimes Sauvignon Blanc', 'Freixenet Italian Rosé', 'Freixenet Pinot Grigio',
+                'Wolf Blass Cabernet Sauvignon', 'Casillero del Diablo Cabernet Sauvignon',
+                'Casillero del Diablo Malbec', 'Casillero del Diablo Merlot', 'Dark Horse',
+                'La Vieille Ferme', 'Calvet Prestige', 'Jacob\'s Creek Merlot', 'Jacob\'s Creek Shiraz',
+                'Blossom Hill', 'Tempranillo', 'Lindeman\'s Merlot', 'Brancott Estate',
+                'Calvet Rosé', 'La Petite Chat', 'Casillero del Diablo Rosé', 'Isla Negra Rosé',
+                'Gallo Family White Zinfandel', 'Campo Viejo Rosé', 'Kumala Zenith',
+                'Secretary Bird Merlot', 'Yellowtail Malbec', 'Yellowtail Merlot',
+                'Yellowtail Shiraz', 'Yellowtail Jammy Red', 'Black Label Red', 'Quirky Bird Merlot',
+                'Quirky Bird Shiraz', 'Hardys Shiraz', 'Hardys Stamp', 'Turner Road Merlot',
+                'Calvet Merlot', 'Châteauneuf-du-Pape Calvet', 'Calvet Mâcon-Villages',
+                'Le Petit Chat Malin', 'Le Russe Cabernet Sauvignon', 'Parato Rosé', 'Hardys Rosé',
+                'Jacob\'s Creek Shiraz', 'I Heart Blush Pinot Grigio', 'Jam Shed',
+                'Blossom Hill White Zinfandel', 'Small Bottle of Blossom Hill White Zinfandel',
+                'Small Bottle of Blossom Hill Chardonnay', 'Hardys Merlot',
+                'Jam Shed Rich Jammy and Smooth Shiraz', 'Jam Shed Malbec', 'Jam Shed Tempranillo',
+                'Isla Negra Merlot', 'Bin 161 Merlot', 'Bin 161 Shiraz', 'I Heart Merlot',
+                'I Heart Shiraz', 'Barefoot Merlot', 'Barefoot Malbec', 'Barefoot Cabernet Sauvignon',
+                'Barefoot Jammy Red', 'Andantino Purple', 'Andantino Rosé', 'Silent Peak',
+                'Calvet Mâcon-Villages', 'Villa Maria Sauvignon Blanc', 'Calvet Prestige Sauvignon Blanc',
+                'McGuigan Black Label Chardonnay', 'McGuigan Black Label Sauvignon Blanc',
+                'Oxford Landing Pinot Grigio', 'Oxford Landing Chardonnay', 'Hardys Sauvignon Blanc'
+            ],
+            crisps: [
+                'Shelf 1: Walker\'s cheese and onion', 'Shelf 1: Walker\'s salt and vinegar', 'Shelf 1: Mr. Porky scratchings',
+                'Shelf 1: Mr. Porky original scratchings', 'Shelf 1: Small packet of Pringles Texas barbecue',
+                'Shelf 1: Small packet of Pringles sour and cream', 'Shelf 1: Small packet of Pringles original',
+                'Shelf 1: Popchips barbecue flavor', 'Shelf 1: Popchips sour and cream',
+
+                'Shelf 2: Walker\'s ready salted', 'Shelf 2: Walker\'s roast chicken', 'Shelf 2: Walker\'s prawn cocktail',
+                'Shelf 2: McCoy\'s flame grilled steak', 'Shelf 2: McCoy\'s cheddar and onion',
+                'Shelf 2: McCoy\'s salt and vinegar', 'Shelf 2: McCoy\'s sizzling king prawn',
+
+                'Shelf 3: Doritos chili heatwave', 'Shelf 3: Doritos tangy cheese', 'Shelf 3: Doritos cool original',
+                'Shelf 3: Walker\'s baked cheese and onion', 'Shelf 3: Tyrell\'s lightly sea-salted',
+                'Shelf 3: Tyrell\'s sweet chili and red pepper', 'Shelf 3: Kettle\'s salt and balsamic vinegar',
+                'Shelf 3: Kettle mature cheddar and red onion',
+
+                'Shelf 4: Mac\'s paprika', 'Shelf 4: Mac\'s pepperoni feast', 'Shelf 4: Mac\'s Texas barbecue',
+                'Shelf 4: Hula Hoops salted', 'Shelf 4: Hula Hoops barbecue beef', 'Shelf 4: Disco cheese and onion',
+
+                'Shelf 5: Kettle mature cheddar and red onion', 'Shelf 5: Big Hula Hoops barbecue beef',
+                'Shelf 5: Monster Munch roast beef', 'Shelf 5: Monster Munch pickled onion',
+                'Shelf 5: Skip\'s prawn cocktail', 'Shelf 5: Knickknacks nice and spicy',
+                'Shelf 5: Scampi flavoured fries', 'Shelf 5: Bacon flavoured fries',
+
+                'Shelf 6: Quaver\'s Cheese', 'Shelf 6: Quaver\'s Prawn Cocktail', 'Shelf 6: What\'s It\'s Really Cheesy',
+                'Shelf 6: Mini Cheddar\'s Original', 'Shelf 6: Mini Cheddar\'s Smoky BBQ',
+                'Shelf 6: Mini Cheddar\'s Red Leicester', 'Shelf 6: Wheat Crunchies Crispy Bacon',
+
+                'Shelf 7: Salt and Vinegar Squares', 'Shelf 7: Cheese and Onion Squares', 'Shelf 7: Royster\'s T-Bone Steak',
+                'Shelf 7: Pompom Bears', 'Shelf 7: Cheetos Twisted Sweet and Spicy Small Packet',
+                'Shelf 7: Cheetos Sweet and Spicy Big Packet', 'Cheetos Sweet and Spicy Big Packet',
+                'Shelf 7: Crispy Bacon Frazzles'
+            ]
+        };
+
+        let currentItemIndex = 0;
+        let restockNeeded = {};
+        let currentSection = [];
+        let completedSections = [];
+
+        document.getElementById('restockAmount').addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+                submitAnswer();
+                event.preventDefault(); // Prevent form submission or other default behaviors
+            }
+        });
+
+        function startSection(section) {
+            currentSection = sections[section];
+            currentItemIndex = 0;
+            restockNeeded = {};
+            document.getElementById('sectionSelect').style.display = 'none';
+            document.getElementById('question').style.display = 'block';
+            askNextItem();
+        }
+
+        function submitAnswer() {
+            const restockAmount = document.getElementById('restockAmount').value;
+            const currentItem = currentSection[currentItemIndex];
+            
+            if (restockAmount > 0) {
+                restockNeeded[currentItem] = restockAmount;
+            }
+
+            currentItemIndex++;
+            if (currentItemIndex < currentSection.length) {
+                askNextItem();
+            } else {
+                displaySummary();
+                saveCompletedChecks();
+            }
+        }
+
+        function completeSection() {
+            saveCompletedChecks();
+            displaySummary();
+        }
+
+        function goBack() {
+            if (currentItemIndex > 0) {
+                currentItemIndex--;
+                askNextItem();
+            }
+        }
+
+        function cancelSection() {
+            startOver();
+        }
+
+        function askNextItem() {
+            document.getElementById('restockAmount').focus();
+        }
+
+        function displaySummary() {
+            const summary = document.getElementById('summary');
+            const summaryList = document.getElementById('summaryList');
+            summaryList.innerHTML = ''; // Clear previous summary
+
+            for (const [item, amount] of Object.entries(restockNeeded)) {
+                const listItem = document.createElement("li");
+                listItem.textContent = `${item}: ${amount}`;
+                summaryList.appendChild(listItem);
+            }
+
+            document.getElementById('question').style.display = 'none';
+            summary.style.display = 'block';
+        }
+
+        function saveCompletedChecks() {
+            if (Object.keys(restockNeeded).length === 0) {
+                return; // No need to save if no restocking was done
+            }
+
+            const completedList = document.getElementById('completedList');
+            const sectionSummary = document.createElement("li");
+            
+            let sectionDetails = `Section: ${currentSection[0].split(':')[0]} - Completed Items: `;
+            let itemsDetails = [];
+
+            for (const [item, amount] of Object.entries(restockNeeded)) {
+                itemsDetails.push(`${item}: ${amount}`);
+            }
+
+            sectionDetails += itemsDetails.join(', ');
+            sectionSummary.textContent = sectionDetails;
+            completedList.appendChild(sectionSummary);
+            completedSections.push(sectionDetails);
+
+            // Clear the current restockNeeded object to prepare for a new section
+            restockNeeded = {};
+            // Clear the currentSection array to reset the state
+            currentSection = [];
+        }
+
+        function startOver() {
+            document.getElementById('sectionSelect').style.display = 'block';
+            document.getElementById('question').style.display = 'none';
+            document.getElementById('summary').style.display = 'none';
+            currentItemIndex = 0;
+            restockNeeded = {};
+            currentSection = [];
+        }
+
+        // Function to clear completed checks
+        function clearCompletedChecks() {
+            // Clear the completed checks list in the HTML
+            const completedList = document.getElementById('completedList');
+            completedList.innerHTML = '';
+
+            // Clear the completed sections array
+            completedSections = [];
+        }
+
+        // Initial view is the section selection
+        startOver();
+    </script>
+
+</body>
+</html>
