@@ -60,9 +60,8 @@
 
     <!-- JSON File Upload -->
     <div id="fileUpload">
-        <h2>Upload Inventory JSON File</h2>
-        <input type="file" id="jsonFileInput" accept=".json">
-        <button onclick="loadJSON()">Load JSON</button>
+        <h2>Loading Inventory JSON File</h2>
+        <button onclick="loadJSON()">Load JSON from GitHub</button>
     </div>
 
     <!-- Section selection screen -->
@@ -117,24 +116,18 @@
         let completedSections = [];
 
         function loadJSON() {
-            const fileInput = document.getElementById('jsonFileInput');
-            const file = fileInput.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    try {
-                        const json = JSON.parse(event.target.result);
-                        sections = json.sections;
-                        document.getElementById('fileUpload').style.display = 'none';
-                        document.getElementById('sectionSelect').style.display = 'block';
-                    } catch (error) {
-                        alert('Invalid JSON file. Please upload a valid file.');
-                    }
-                };
-                reader.readAsText(file);
-            } else {
-                alert('Please select a file.');
-            }
+            const jsonUrl = 'https://github.com/KiNGZIONSKY/RestockUPDATED/blob/main/INVENTORY.JSON';
+            fetch(jsonUrl)
+                .then(response => response.json())
+                .then(json => {
+                    sections = json.sections;
+                    document.getElementById('fileUpload').style.display = 'none';
+                    document.getElementById('sectionSelect').style.display = 'block';
+                })
+                .catch(error => {
+                    alert('Failed to load JSON file. Please check the URL or your network connection.');
+                    console.error('Error loading JSON:', error);
+                });
         }
 
         document.getElementById('restockAmount').addEventListener('keydown', function(event) {
