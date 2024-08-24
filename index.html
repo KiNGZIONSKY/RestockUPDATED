@@ -28,11 +28,13 @@
         button:hover {
             background-color: #e0e0e0;
         }
-        input[type="number"] {
+        input[type="number"], input[type="date"] {
             padding: 5px;
             font-size: 16px;
-            width: 60px;
             margin-right: 10px;
+        }
+        input[type="number"] {
+            width: 60px;
         }
         table {
             width: 100%;
@@ -73,6 +75,7 @@
     <div id="question" style="display: none;">
         <h2 id="currentItem">Loading...</h2>
         <input type="number" id="restockAmount" min="0" placeholder="Quantity">
+        <input type="date" id="sellByDate" placeholder="Sell-By Date">
         <button onclick="submitAnswer()">Next</button>
         <button onclick="goBack()">Go Back</button>
         <button onclick="completeSection()">Complete</button>
@@ -84,6 +87,7 @@
         <h2>Summary of Items to Restock</h2>
         <ul id="summaryList"></ul>
         <button onclick="startOver()">Start Over</button>
+        <button onclick="downloadSellByDateItems()">Download Sell-By Date Items</button>
     </div>
 
     <!-- Completed Checks -->
@@ -94,12 +98,14 @@
                 <tr>
                     <th>Item</th>
                     <th>Quantity</th>
+                    <th>Sell-By Date</th>
                     <th>Restocked</th>
                 </tr>
             </thead>
             <tbody id="completedList"></tbody>
         </table>
         <button onclick="clearCompletedChecks()">Clear Completed Checks</button>
+        <input type="file" id="fileInput" onchange="checkExpiredItems(event)">
     </div>
 
     <script>
@@ -161,7 +167,8 @@
                 "Jack Daniel's Coca-Cola", "Jack Daniel's Coca-Cola Zero Sugar", "Gordon's Gin and Tonic Pink",
                 "Gordon's Gin and Tonic Green", "Gordon's Gin and Tonic Diet", "Southern Comfort Lemonade",
                 "Black Grape Vodka", "Pimm's Lemonade", "Bombay Presse Citrus Collins",
-                "Grey Goose Strawberry and Lemongrass", "Bacardi Mojito", "Bacardi Mango Mojito","Four Loko", "Ice Smirnoff", "Blue VK", "Pink Hooch", "Thatcher's Haze",
+                "Grey Goose Strawberry and Lemongrass", "Bacardi Mojito", "Bacardi Mango Mojito",
+                "Four Loko", "Ice Smirnoff", "Blue VK", "Pink Hooch", "Thatcher's Haze",
                 "Henry Weston's Vintage Cider", "Thatcher's Katy", "Thatcher's Apple and Blackcurrant",
                 "Thatcher's Blood Orange Cider", "Bulmer's Crushed Red Berries and Lime",
                 "Bulmer's Original Premium Cider", "Magners Irish Cider", "Berries and Cherries Old Mout Cider",
@@ -202,42 +209,31 @@
                 "Oxford Landing Pinot Grigio", "Oxford Landing Chardonnay", "Hardys Sauvignon Blanc"
             ],
             crisps: [
-                "Shelf 1: Walker's cheese and onion", "Shelf 1: Walker's salt and vinegar", "Shelf 1: Mr. Porky scratchings",
-                "Shelf 1: Mr. Porky original scratchings", "Shelf 1: Small packet of Pringles Texas barbecue",
-                "Shelf 1: Small packet of Pringles sour and cream", "Shelf 1: Small packet of Pringles original",
-                "Shelf 1: Popchips barbecue flavor", "Shelf 1: Popchips sour and cream",
-
-                "Shelf 2: Walker's ready salted", "Shelf 2: Walker's roast chicken", "Shelf 2: Walker's prawn cocktail",
-                "Shelf 2: McCoy's flame grilled steak", "Shelf 2: McCoy's cheddar and onion",
-                "Shelf 2: McCoy's salt and vinegar", "Shelf 2: McCoy's sizzling king prawn",
-
-                "Shelf 3: Doritos chili heatwave", "Shelf 3: Doritos tangy cheese", "Shelf 3: Doritos cool original",
-                "Shelf 3: Walker's baked cheese and onion", "Shelf 3: Tyrell's lightly sea-salted",
-                "Shelf 3: Tyrell's sweet chili and red pepper", "Shelf 3: Kettle's salt and balsamic vinegar",
-                "Shelf 3: Kettle mature cheddar and red onion",
-
-                "Shelf 4: Mac's paprika", "Shelf 4: Mac's pepperoni feast", "Shelf 4: Mac's Texas barbecue",
-                "Shelf 4: Hula Hoops salted", "Shelf 4: Hula Hoops barbecue beef", "Shelf 4: Disco cheese and onion",
-
-                "Shelf 5: Kettle mature cheddar and red onion", "Shelf 5: Big Hula Hoops barbecue beef",
-                "Shelf 5: Monster Munch roast beef", "Shelf 5: Monster Munch pickled onion",
-                "Shelf 5: Skip's prawn cocktail", "Shelf 5: Knickknacks nice and spicy",
-                "Shelf 5: Scampi flavoured fries", "Shelf 5: Bacon flavoured fries",
-
-                "Shelf 6: Quaver's Cheese", "Shelf 6: Quaver's Prawn Cocktail", "Shelf 6: What's It's Really Cheesy",
-                "Shelf 6: Mini Cheddar's Original", "Shelf 6: Mini Cheddar's Smoky BBQ",
-                "Shelf 6: Mini Cheddar's Red Leicester", "Shelf 6: Wheat Crunchies Crispy Bacon",
-
-                "Shelf 7: Salt and Vinegar Squares", "Shelf 7: Cheese and Onion Squares", "Shelf 7: Royster's T-Bone Steak",
-                "Shelf 7: Pompom Bears", "Shelf 7: Cheetos Twisted Sweet and Spicy Small Packet",
-                "Shelf 7: Cheetos Sweet and Spicy Big Packet", "Shelf 7: Crispy Bacon Frazzles"
+                "Walker's Cheese and Onion", "Walker's Salt and Vinegar", "Mr. Porky Scratchings",
+                "Mr. Porky Original Scratchings", "Small Pringles Texas Barbecue",
+                "Small Pringles Sour Cream", "Small Pringles Original", "Popchips Barbecue",
+                "Popchips Sour Cream", "Walker's Ready Salted", "Walker's Roast Chicken",
+                "Walker's Prawn Cocktail", "McCoy's Flame Grilled Steak", "McCoy's Cheddar and Onion",
+                "McCoy's Salt and Vinegar", "McCoy's Sizzling King Prawn", "Doritos Chili Heatwave",
+                "Doritos Tangy Cheese", "Doritos Cool Original", "Walker's Baked Cheese and Onion",
+                "Tyrell's Lightly Sea Salted", "Tyrell's Sweet Chili and Red Pepper",
+                "Kettle's Salt and Balsamic Vinegar", "Kettle Mature Cheddar and Red Onion",
+                "Mac's Paprika", "Mac's Pepperoni Feast", "Mac's Texas Barbecue", "Hula Hoops Salted",
+                "Hula Hoops Barbecue Beef", "Disco Cheese and Onion", "Big Hula Hoops Barbecue Beef",
+                "Monster Munch Roast Beef", "Monster Munch Pickled Onion", "Skips Prawn Cocktail",
+                "Knickknacks Nice and Spicy", "Scampi Flavoured Fries", "Bacon Flavoured Fries",
+                "Quaver's Cheese", "Quaver's Prawn Cocktail", "What's It's Really Cheesy",
+                "Mini Cheddar's Original", "Mini Cheddar's Smoky BBQ", "Mini Cheddar's Red Leicester",
+                "Wheat Crunchies Crispy Bacon", "Salt and Vinegar Squares", "Cheese and Onion Squares",
+                "Royster's T-Bone Steak", "Pompom Bears", "Cheetos Twisted Sweet and Spicy Small Packet",
+                "Cheetos Sweet and Spicy Big Packet", "Crispy Bacon Frazzles"
             ]
         };
 
         let currentItemIndex = 0;
-        let restockNeeded = {};
+        let checklistItems = {};
+        let sellByDateItems = {};
         let currentSection = [];
-        let completedSections = [];
 
         document.getElementById('restockAmount').addEventListener('keydown', function(event) {
             if (event.key === 'Enter') {
@@ -249,18 +245,32 @@
         function startSection(section) {
             currentSection = sections[section];
             currentItemIndex = 0;
-            restockNeeded = {};
+            checklistItems = {};
+            sellByDateItems = {};
             document.getElementById('sectionSelect').style.display = 'none';
             document.getElementById('question').style.display = 'block';
             askNextItem();
         }
 
         function submitAnswer() {
-            const restockAmount = document.getElementById('restockAmount').value;
+            const restockAmount = parseInt(document.getElementById('restockAmount').value, 10);
+            const sellByDate = document.getElementById('sellByDate').value;
             const currentItem = currentSection[currentItemIndex];
-            
-            if (restockAmount > 0) {
-                restockNeeded[currentItem] = restockAmount;
+
+            if (isNaN(restockAmount) || restockAmount <= 0) {
+                alert("Please enter a valid quantity.");
+                return;
+            }
+
+            if (sellByDate) {
+                sellByDateItems[currentItem] = {
+                    quantity: restockAmount,
+                    sellByDate: sellByDate
+                };
+            } else {
+                checklistItems[currentItem] = {
+                    quantity: restockAmount
+                };
             }
 
             currentItemIndex++;
@@ -290,6 +300,7 @@
 
         function askNextItem() {
             document.getElementById('restockAmount').value = '';
+            document.getElementById('sellByDate').value = '';
             document.getElementById('currentItem').textContent = `How many of ${currentSection[currentItemIndex]} need restocking?`;
             document.getElementById('restockAmount').focus();
         }
@@ -299,9 +310,15 @@
             const summaryList = document.getElementById('summaryList');
             summaryList.innerHTML = '';
 
-            for (const [item, amount] of Object.entries(restockNeeded)) {
+            for (const [item, data] of Object.entries(checklistItems)) {
                 const listItem = document.createElement("li");
-                listItem.textContent = `${item}: ${amount}`;
+                listItem.textContent = `${item}: ${data.quantity}`;
+                summaryList.appendChild(listItem);
+            }
+
+            for (const [item, data] of Object.entries(sellByDateItems)) {
+                const listItem = document.createElement("li");
+                listItem.textContent = `${item}: ${data.quantity} (Sell-By: ${data.sellByDate})`;
                 summaryList.appendChild(listItem);
             }
 
@@ -310,13 +327,12 @@
         }
 
         function saveCompletedChecks() {
-            if (Object.keys(restockNeeded).length === 0) {
-                return;
-            }
+            if (Object.keys(checklistItems).length === 0 && Object.keys(sellByDateItems).length === 0) return;
 
             const completedList = document.getElementById('completedList');
+            completedList.innerHTML = '';  // Clear previous entries
 
-            for (const [item, amount] of Object.entries(restockNeeded)) {
+            for (const [item, data] of Object.entries(checklistItems)) {
                 const row = document.createElement("tr");
 
                 const itemNameCell = document.createElement("td");
@@ -324,8 +340,12 @@
                 row.appendChild(itemNameCell);
 
                 const itemQuantityCell = document.createElement("td");
-                itemQuantityCell.textContent = amount;
+                itemQuantityCell.textContent = data.quantity;
                 row.appendChild(itemQuantityCell);
+
+                const sellByDateCell = document.createElement("td");
+                sellByDateCell.textContent = "N/A";
+                row.appendChild(sellByDateCell);
 
                 const restockedCell = document.createElement("td");
                 const checkbox = document.createElement("input");
@@ -336,23 +356,95 @@
                 completedList.appendChild(row);
             }
 
-            restockNeeded = {};
+            for (const [item, data] of Object.entries(sellByDateItems)) {
+                const row = document.createElement("tr");
+
+                const itemNameCell = document.createElement("td");
+                itemNameCell.textContent = item;
+                row.appendChild(itemNameCell);
+
+                const itemQuantityCell = document.createElement("td");
+                itemQuantityCell.textContent = data.quantity;
+                row.appendChild(itemQuantityCell);
+
+                const sellByDateCell = document.createElement("td");
+                sellByDateCell.textContent = data.sellByDate;
+                row.appendChild(sellByDateCell);
+
+                const restockedCell = document.createElement("td");
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                restockedCell.appendChild(checkbox);
+                row.appendChild(restockedCell);
+
+                completedList.appendChild(row);
+            }
+
+            checklistItems = {};
+            sellByDateItems = {};
             currentSection = [];
+        }
+
+        function downloadSellByDateItems() {
+            let textContent = "Item,Quantity,Sell-By Date\n";
+            for (const [item, data] of Object.entries(sellByDateItems)) {
+                textContent += `${item},${data.quantity},${data.sellByDate}\n`;
+            }
+
+            const blob = new Blob([textContent], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'sell_by_date_items.txt';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function checkExpiredItems(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const contents = e.target.result;
+                const lines = contents.split('\n').slice(1); // Skip header
+
+                const expiredItems = [];
+                const today = new Date();
+
+                lines.forEach(line => {
+                    const [item, , sellByDate] = line.split(',');
+                    if (!item || !sellByDate) return;
+
+                    const itemDate = new Date(sellByDate);
+                    if (itemDate < today) {
+                        expiredItems.push(item);
+                    }
+                });
+
+                if (expiredItems.length > 0) {
+                    alert(`The following items have expired: \n${expiredItems.join('\n')}`);
+                } else {
+                    alert("No expired items found.");
+                }
+            };
+
+            reader.readAsText(file);
         }
 
         function startOver() {
             document.getElementById('sectionSelect').style.display = 'block';
             document.getElementById('question').style.display = 'none';
             document.getElementById('summary').style.display = 'none';
-            currentItemIndex = 0;
-            restockNeeded = {};
+            checklistItems = {};
+            sellByDateItems = {};
             currentSection = [];
+            currentItemIndex = 0;
         }
 
         function clearCompletedChecks() {
             const completedList = document.getElementById('completedList');
             completedList.innerHTML = '';
-            completedSections = [];
         }
 
         // Initialize the page by displaying the section selection screen
