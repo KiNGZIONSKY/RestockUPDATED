@@ -67,12 +67,7 @@
     <!-- Section selection screen -->
     <div id="sectionSelect" style="display: none;">
         <h2>Select a Section to Restock</h2>
-        <button onclick="startSection('drinks')">Drinks</button>
-        <button onclick="startSection('wine')">Wine</button>
-        <button onclick="startSection('beer')">Beer</button>
-        <button onclick="startSection('cider')">Cider</button>
-        <button onclick="startSection('shelfWine')">Shelf Wine</button>
-        <button onclick="startSection('crisps')">Crisps</button>
+        <div id="sectionButtons"></div>
     </div>
 
     <!-- Restock questions screen -->
@@ -116,18 +111,35 @@
         let completedSections = [];
 
         function loadJSON() {
-            const jsonUrl = 'https://raw.githubusercontent.com/KiNGZIONSKY/RestockUPDATED/NEW/TheStock.JSON';
+            const jsonUrl = 'https://raw.githubusercontent.com/KiNGZIONSKY/RestockUPDATED/main/TheStock.JSON';
             fetch(jsonUrl)
                 .then(response => response.json())
                 .then(json => {
                     sections = json.sections;
                     document.getElementById('fileUpload').style.display = 'none';
                     document.getElementById('sectionSelect').style.display = 'block';
+                    generateSectionButtons();
                 })
                 .catch(error => {
                     alert('Failed to load JSON file. Please check the URL or your network connection.');
                     console.error('Error loading JSON:', error);
                 });
+        }
+
+        function generateSectionButtons() {
+            const sectionButtonsContainer = document.getElementById('sectionButtons');
+            sectionButtonsContainer.innerHTML = ''; // Clear any existing buttons
+
+            for (const section in sections) {
+                const button = document.createElement('button');
+                button.textContent = capitalizeFirstLetter(section);
+                button.onclick = () => startSection(section);
+                sectionButtonsContainer.appendChild(button);
+            }
+        }
+
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
         }
 
         document.getElementById('restockAmount').addEventListener('keydown', function(event) {
