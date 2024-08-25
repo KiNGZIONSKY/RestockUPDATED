@@ -124,6 +124,9 @@
     ],
 "snacks": [
 "two snack"
+],
+"NewSnack": [
+"works", "defo works"
 ]
   }
 }
